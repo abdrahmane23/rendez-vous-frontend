@@ -1,0 +1,181 @@
+/* 1. Change the main background and font */
+body, 
+body.login-pf {
+  background-color: #F8FAFC !important;
+  background-image: none !important;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* 2. Style the Login Card Wrapper (Constrained and Centered) */
+.login-pf-page .card-pf, 
+#kc-content-wrapper {
+  max-width: 450px !important;
+  width: 90% !important;
+  margin: 5rem auto !important;
+  background-color: white !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+  border-top: 4px solid #0F52BA !important;
+  padding: 2.5rem !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. Hide the default Keycloak logo text */
+#kc-header-wrapper {
+  display: none !important; 
+}
+
+/* 4. Style the Form Inputs to look like modern Tailwind inputs */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  border-radius: 0.5rem !important;
+  border: 1px solid #CBD5E1 !important; /* Slate-300 */
+  padding: 0.75rem 1rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+  transition: border-color 0.2s !important;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  border-color: #0F52BA !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(15, 82, 186, 0.2) !important;
+}
+
+/* 5. Change the main Login Button color */
+#kc-login,
+.kcButtonPrimaryClass {
+  background-color: #0F52BA !important;
+  border-color: #0F52BA !important;
+  color: white !important;
+  border-radius: 0.5rem !important; 
+  font-weight: bold !important;
+  padding: 0.75rem 1.5rem !important;
+  width: 100% !important;
+  transition: all 0.2s ease-in-out !important;
+  margin-top: 0.5rem !important;
+  cursor: pointer !important;
+}
+
+#kc-login:hover,
+.kcButtonPrimaryClass:hover {
+  background-color: #0d459c !important;
+  border-color: #0d459c !important;
+}
+
+/* 6. Style Links (Forgot password, Register) */
+.login-pf-page .login-pf-settings a,
+#kc-registration a {
+  color: #0F52BA !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+}
+
+.login-pf-page .login-pf-settings a:hover,
+#kc-registration a:hover {
+  text-decoration: underline !important;
+}
+
+/* 7. Clean up labels */
+label {
+  font-weight: 600 !important;
+  color: #1E293B !important;
+  font-size: 0.875rem !important;
+}
+
+/* 8. Fix the Show/Hide Password Button & Input Group */
+.pf-c-input-group,
+.pf-v5-c-input-group {
+  display: flex !important;
+  width: 100% !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.pf-c-input-group input[type="password"],
+.pf-v5-c-input-group input[type="password"] {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-right: none !important;
+}
+
+/* Sync borders on focus */
+.pf-c-input-group:focus-within input,
+.pf-v5-c-input-group:focus-within input {
+  border-color: #0F52BA !important;
+  box-shadow: -3px 0 0 0 rgba(15,82,186,0.2),
+              0 3px 0 0 rgba(15,82,186,0.2),
+              0 -3px 0 0 rgba(15,82,186,0.2) !important;
+}
+
+/* 9. Show/Hide button — all states locked */
+.pf-c-input-group button.pf-m-control,
+.pf-v5-c-input-group button.pf-m-control,
+button[aria-label*="assword"] {
+  --pf-c-button--BorderRadius: 0 !important;
+  --pf-v5-c-button--BorderRadius: 0 !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  border: 1px solid #CBD5E1 !important;
+  border-left: none !important;
+  background-color: white !important;
+  color: #64748B !important;
+  padding: 0 1rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  outline: none !important;
+  box-shadow: none !important;
+  /* Prevent PatternFly from adding any extra rendering */
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Every interactive state — all use the shorthand so nothing can partially override */
+.pf-c-input-group button.pf-m-control:hover,
+.pf-c-input-group button.pf-m-control:focus,
+.pf-c-input-group button.pf-m-control:active,
+.pf-c-input-group button.pf-m-control:focus-visible,
+.pf-v5-c-input-group button.pf-m-control:hover,
+.pf-v5-c-input-group button.pf-m-control:focus,
+.pf-v5-c-input-group button.pf-m-control:active,
+.pf-v5-c-input-group button.pf-m-control:focus-visible,
+button[aria-label*="assword"]:hover,
+button[aria-label*="assword"]:focus,
+button[aria-label*="assword"]:active,
+button[aria-label*="assword"]:focus-visible {
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  background-color: white !important;
+  border: 1px solid #CBD5E1 !important;
+  border-left: none !important;
+}
+
+/* Sync button border on parent focus */
+.pf-c-input-group:focus-within button.pf-m-control,
+.pf-v5-c-input-group:focus-within button.pf-m-control {
+  border-color: #0F52BA !important;
+  border-left: none !important;
+}
+
+/* Completely destroy ALL pseudo-elements PatternFly uses for focus rings */
+.pf-c-input-group button.pf-m-control::before,
+.pf-c-input-group button.pf-m-control::after,
+.pf-v5-c-input-group button.pf-m-control::before,
+.pf-v5-c-input-group button.pf-m-control::after,
+button[aria-label*="assword"]::before,
+button[aria-label*="assword"]::after {
+  all: unset !important;
+  display: none !important;
+  content: none !important;
+}
