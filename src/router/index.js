@@ -1,7 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import keycloak from '../services/keycloak';
 
+const getRoles = () => {
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  const clientRoles = keycloak.tokenParsed?.resource_access?.['rendezvous-frontend']?.roles || [];
+
+  return [...new Set([...realmRoles, ...clientRoles])];
+};
+
+const hasRole = (role) => getRoles().includes(role);
+
 const routes = [
+  {
+    path: '/login',
+    redirect: '/'
+  },
   {
     path: '/',
     name: 'Root',
@@ -11,14 +24,14 @@ const routes = [
         keycloak.login();
       } else {
         // Traffic Control: Using hasRealmRole because your roles are in realm_access
-        if (keycloak.hasRealmRole('ADMIN')) {
+        if (hasRole('admin')) {
           next('/admin');
-        } else if (keycloak.hasRealmRole('EXAMINER')) {
+        } else if (hasRole('examiner')) {
           next('/examiner');
-        } else if (keycloak.hasRealmRole('PATIENT')) {
+        } else if (hasRole('patient')) {
           next('/patient');
         } else {
-          console.warn("User authenticated but no recognized App Roles found");
+          console.warn('User authenticated but no recognized App Roles found', getRoles());
           next('/unauthorized');
         }
       }
@@ -28,19 +41,19 @@ const routes = [
     path: '/patient',
     name: 'Patient',
     component: () => import('../views/PatientView.vue'),
-    meta: { requiresAuth: true, role: 'PATIENT' }
+    meta: { requiresAuth: true, role: 'patient' }
   },
   {
     path: '/admin',
     name: 'Admin',
     component: () => import('../views/AdminView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
+    meta: { requiresAuth: true, role: 'admin' }
   },
   {
     path: '/examiner',
     name: 'Examiner',
     component: () => import('../views/ExaminerView.vue'),
-    meta: { requiresAuth: true, role: 'EXAMINER' }
+    meta: { requiresAuth: true, role: 'examiner' }
   },
   {
     path: '/unauthorized',
@@ -69,8 +82,8 @@ router.beforeEach((to, from, next) => {
 
   // Check roles using hasRealmRole
   const requiredRole = to.meta.role;
-  if (requiredRole && !keycloak.hasRealmRole(requiredRole)) {
-    console.error(`Access Denied. Role ${requiredRole} missing from realm_access.`);
+  if (requiredRole && !hasRole(requiredRole)) {
+    console.error(`Access Denied. Role ${requiredRole} missing from token.`, getRoles());
     next('/unauthorized');
   } else {
     next();

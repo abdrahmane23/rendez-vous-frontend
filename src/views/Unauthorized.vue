@@ -5,6 +5,11 @@
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-red-100">
         <h2 class="text-2xl font-bold text-red-600 mb-2">Role Error</h2>
         <p class="text-slate-500 mb-6">Your account doesn't have the correct roles assigned.</p>
+
+        <div class="mb-6 rounded-lg bg-slate-50 p-3 text-left text-xs text-slate-600">
+          <p class="font-semibold text-slate-700">Roles received from Keycloak:</p>
+          <p class="mt-1 break-all">{{ rolesText }}</p>
+        </div>
         
         <button 
           @click="resetAndLogout"
@@ -18,7 +23,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import keycloak from '../services/keycloak';
+
+const rolesText = computed(() => {
+  const realmRoles = keycloak.tokenParsed?.realm_access?.roles || [];
+  const clientRoles = keycloak.tokenParsed?.resource_access?.['rendezvous-frontend']?.roles || [];
+  const roles = [...new Set([...realmRoles, ...clientRoles])];
+
+  return roles.length ? roles.join(', ') : 'No roles found in token';
+});
 
 const resetAndLogout = () => {
   // This clears the Keycloak tokens and redirects to the login screen

@@ -2,8 +2,8 @@ import Keycloak from 'keycloak-js';
 
 const keycloak = new Keycloak({
   url: 'http://localhost:8080',
-  realm: 'Rendez-vous',
-  clientId: 'Rendez-vous-frontend',
+  realm: 'rendezvous',
+  clientId: 'rendezvous-frontend',
 });
 
 export const initKeycloak = (onAuthenticatedCallback) => {
@@ -13,6 +13,8 @@ export const initKeycloak = (onAuthenticatedCallback) => {
   })
     .then((authenticated) => {
       if (authenticated) {
+        console.log('Keycloak realm roles:', keycloak.tokenParsed?.realm_access?.roles || []);
+
         // Token refresh logic: refresh if token expires in < 70 seconds
         setInterval(() => {
           keycloak.updateToken(70).catch(() => {
