@@ -15,7 +15,10 @@
 
         <div class="flex items-center gap-4 md:gap-6">
           
-          <button class="bg-[#0F52BA] hover:bg-[#0d459c] text-white font-bold py-2.5 px-4 md:px-6 rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm md:text-base">
+          <button 
+            @click="isModalOpen = true"
+            class="bg-[#0F52BA] hover:bg-[#0d459c] text-white font-bold py-2.5 px-4 md:px-6 rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm md:text-base"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
             </svg>
@@ -69,33 +72,53 @@
     </nav>
 
     <main class="max-w-7xl mx-auto p-4 md:p-8">
-      
       <header class="mb-8">
         <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Espace Patient</h1>
         <p class="text-slate-500 mt-1">Bienvenue, voici le résumé de votre dossier médical.</p>
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <UpcomingAppointements />
+        <UpcomingAppointments />
         <Results />
       </div>
     </main>
+
+    <AppointmentModal 
+      :is-open="isModalOpen" 
+      @close="isModalOpen = false" 
+      @submit="handleModalSubmit"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import keycloak from '../services/keycloak';
-import UpcomingAppointements from '../components/UpcomingAppointements.vue';
+import AppointmentModal from '../components/AppointmentModal.vue';
 import Results from '../components/Results.vue';
+import UpcomingAppointments from '../components/UpcomingAppointements.vue';
+
+// ADJUSTMENT 3: Import our newly created Modal Component and define state flags
 
 const isProfileOpen = ref(false);
+const isModalOpen = ref(false); // Controls tracking state if modal layout handles render visibility
 
 const userProfile = ref({
   firstName: '',
   fullName: '',
   email: ''
 });
+
+// Capture sub-component payloads if you ever want to push new entries directly to UpcomingAppointments
+const handleModalSubmit = (formData) => {
+  console.log('Nouveau rendez-vous créé avec succès:', formData);
+  
+  // Close the popup window
+  isModalOpen.value = false;
+  
+  // Note: Later on, you can make an API request here using axios/fetch 
+  // or use an event bus/Pinia store to refresh the <UpcomingAppointements /> list instantly!
+};
 
 onMounted(() => {
   if (keycloak.tokenParsed) {
