@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@tailwindcss/vite": "^4.3.0",
     "axios": "^1.16.1",
     "keycloak-js": "^26.2.4",

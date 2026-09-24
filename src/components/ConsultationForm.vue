@@ -47,7 +47,9 @@ onMounted(async () => {
     });
     
     const rawList = Array.isArray(response.data) ? response.data : (response.data.content || []);
+    console.log("Réponse brute des sections :", rawList);
     sections.value = rawList.filter(s => !s.testName || s.testName.toLowerCase() === 'none');
+    console.log("Sections de consultation récupérées :", sections.value);
   } catch (error) {
     console.error("Erreur sections:", error);
     errorMessage.value = "Impossible de récupérer les services.";
@@ -103,7 +105,8 @@ const fetchAllExaminersBySection = async () => {
       headers: { Authorization: `Bearer ${keycloak.token}` }
     });
     
-    const examiners = Array.isArray(response.data) ? response.data : (response.data.content || []);
+     examiners.value = Array.isArray(response.data) ? response.data : (response.data.content || []);
+    console.log( examiners.value.length);
   } catch (error) {
     console.error("Erreur récupération tous examinateurs:", error);
     examinerErrorMessage.value = "Impossible de charger les médecins du département.";
@@ -127,7 +130,20 @@ const fetchDoctorAvailableTimes = async (doctor) => {
       headers: { Authorization: `Bearer ${keycloak.token}` }
     });
 
-    availableTimeSlots.value = Array.isArray(response.data) ? response.data : [];
+    const allSlots = Array.isArray(response.data) ? response.data : [];
+    const now = new Date(); // Date et heure actuelles
+
+    // Filtrer pour ne garder que les créneaux futurs
+    availableTimeSlots.value = allSlots.filter(slot => {
+      // Gérer la casse selon la structure (Start ou start)
+      const startTimeString = slot.start || slot.Start; 
+      
+      if (!startTimeString) return false; // Ignorer si le format est invalide
+
+      const slotStartTime = new Date(startTimeString);
+      return slotStartTime > now;
+    });
+
   } catch (error) {
     console.error("Erreur créneaux horaires:", error);
     slotErrorMessage.value = "Erreur lors de la récupération des disponibilités de ce médecin.";

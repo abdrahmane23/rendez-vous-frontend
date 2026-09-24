@@ -1,5 +1,24 @@
 <template>
   <div class="min-h-screen bg-[#F8FAFC] text-[#1E293B]">
+    <div class="fixed top-4 right-4 z-[9999] space-y-2">
+  <div
+    v-for="notification in notifications"
+    :key="notification.id"
+    class="bg-white border-l-4 border-[#0F52BA] shadow-lg rounded-lg p-4 min-w-[320px]"
+  >
+    <div class="font-semibold text-[#0F52BA]">
+      Notification
+    </div>
+
+    <div class="text-sm text-slate-700 mt-1">
+      {{ notification.message }}
+    </div>
+
+    <div class="text-xs text-slate-400 mt-2">
+      {{ formatDateTime(notification.timestamp) }}
+    </div>
+  </div>
+</div>
     <header class="border-b border-slate-200 bg-white">
       <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-3">
@@ -86,7 +105,7 @@
                   <p class="mt-1 text-sm text-slate-500">{{ formatDate(shift.start) }}</p>
                 </div>
                 <span class="rounded-full bg-[#10B981]/10 px-2 py-1 text-xs font-bold text-[#10B981]">
-                  Active
+                  {{ shift.status }}
                 </span>
               </div>
               <p class="mt-3 text-sm font-semibold text-[#0F52BA]">
@@ -144,9 +163,9 @@
                   <td class="px-5 py-4">
                     <button
                       @click="openHistory(appointment)"
-                      class="text-left"
+                      class="text-left group"
                     >
-                      <span class="block text-sm font-semibold text-[#0F52BA]">{{ patientLabel(appointment) }}</span>
+                      <span class="block text-sm font-semibold text-[#0F52BA] group-hover:underline">{{ patientLabel(appointment) }}</span>
                       <span class="block text-xs text-slate-500">{{ shortId(appointment.id) }}</span>
                     </button>
                   </td>
@@ -172,13 +191,13 @@
                       >
                         Non attended
                       </button>
-                      <button
+                      <button v-if="appointment.type ==='CONSULTATION'"
                         @click="openReportModal(appointment, 'consultation')"
                         class="rounded-lg bg-[#0F52BA] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0c4295]"
                       >
                         Consultation
                       </button>
-                      <button
+                      <button v-if="appointment.type === 'TEST'"
                         @click="openReportModal(appointment, 'result')"
                         class="rounded-lg bg-[#6366F1] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#4f46e5]"
                       >
@@ -197,26 +216,124 @@
     <div
       v-if="historyAppointment"
       class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      @click.self="historyAppointment = null"
+      @click.self="closeHistory"
     >
-      <div class="w-full max-w-lg rounded-lg bg-white shadow-xl">
-        <div class="border-b border-slate-200 px-5 py-4">
-          <h3 class="font-bold text-[#1E293B]">Historique patient</h3>
-          <p class="text-sm text-slate-500">{{ patientLabel(historyAppointment) }}</p>
-        </div>
-        <div class="space-y-4 p-5">
-          <div class="rounded-lg bg-[#F8FAFC] p-4">
-            <p class="text-xs font-bold uppercase text-slate-500">Rendez-vous</p>
-            <p class="mt-1 font-semibold text-[#1E293B]">{{ formatDateTime(historyAppointment.start) }}</p>
+      <div class="w-full max-w-2xl rounded-lg bg-white shadow-xl max-h-[90vh] flex flex-col">
+        
+        <div class="border-b border-slate-200 px-5 py-4 flex justify-between items-center bg-slate-50 rounded-t-lg">
+          <div>
+            <h3 class="font-bold text-[#1E293B]">Historique du patient</h3>
+            <p class="text-sm text-slate-500">{{ patientLabel(historyAppointment) }}</p>
           </div>
-          <div class="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600">
-            Le backend retourne actuellement l'identifiant et l'heure du rendez-vous. Le panneau est prêt pour afficher les antécédents, résultats précédents et notes patient dès qu'un endpoint d'historique est disponible.
-          </div>
+          <button @click="closeHistory" class="text-slate-400 hover:text-slate-600 transition">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
-        <div class="flex justify-end border-t border-slate-200 px-5 py-4">
+
+        <div class="p-5 overflow-y-auto flex-1">
+          
+          <div v-if="patientHistory.error" class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {{ patientHistory.error }}
+          </div>
+
+          <div v-if="!historyDetail.data">
+            
+            <div v-if="patientHistory.loading" class="text-center text-slate-500 text-sm py-8">
+              Chargement de l'historique...
+            </div>
+
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 class="font-bold text-[#0F52BA] mb-3 flex items-center gap-2 border-b pb-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                  Consultations ({{ patientHistory.consultations.length }})
+                </h4>
+                <div v-if="patientHistory.consultations.length === 0" class="text-sm text-slate-500 italic">Aucune consultation.</div>
+                <div class="space-y-3">
+                  <button 
+                    v-for="item in patientHistory.consultations" :key="item.id"
+                    @click="loadHistoryDetail(item.id, 'consultation')"
+                    class="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-[#0F52BA] hover:bg-blue-50 transition"
+                  >
+                    <p class="text-xs font-bold text-slate-500 mb-1">{{ formatDateTime(item.createdAt) }}</p>
+                    <p class="text-sm font-semibold text-[#1E293B]">Par: {{ item.examinerName || 'Inconnu' }}</p>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-[#10B981] mb-3 flex items-center gap-2 border-b pb-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                  Tests de Résultat ({{ patientHistory.testResults.length }})
+                </h4>
+                <div v-if="patientHistory.testResults.length === 0" class="text-sm text-slate-500 italic">Aucun résultat.</div>
+                <div class="space-y-3">
+                  <button 
+                    v-for="item in patientHistory.testResults" :key="item.id"
+                    @click="loadHistoryDetail(item.id, 'test-result')"
+                    class="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-[#10B981] hover:bg-emerald-50 transition"
+                  >
+                    <p class="text-xs font-bold text-slate-500 mb-1">{{ formatDateTime(item.createdAt) }}</p>
+                    <p class="text-sm font-semibold text-[#1E293B]">Par: {{ item.examinerName || 'Inconnu' }}</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="animate-fade-in">
+            <button @click="historyDetail.data = null" class="mb-4 text-sm font-semibold text-[#0F52BA] hover:underline flex items-center gap-1">
+              &larr; Retour à la liste
+            </button>
+            
+            <div v-if="historyDetail.loading" class="text-center text-slate-500 text-sm py-8">
+              Chargement des détails...
+            </div>
+            
+            <div v-else-if="historyDetail.error" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              {{ historyDetail.error }}
+            </div>
+
+            <div v-else class="space-y-4 rounded-lg bg-slate-50 p-5 border border-slate-200">
+              <h4 class="font-bold text-[#1E293B] text-lg mb-2">
+                Détail du {{ historyDetail.type === 'consultation' ? 'rapport de consultation' : 'résultat de test' }}
+              </h4>
+              
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p class="text-xs font-bold uppercase text-slate-500">Créé le</p>
+                  <p class="font-semibold text-[#1E293B]">{{ formatDateTime(historyDetail.data.createdAt) }}</p>
+                </div>
+                <div>
+                  <p class="text-xs font-bold uppercase text-slate-500">Rendez-vous du</p>
+                  <p class="font-semibold text-[#1E293B]">{{ formatDateTime(historyDetail.data.appointmentStart) }}</p>
+                </div>
+                <div class="col-span-2">
+                  <p class="text-xs font-bold uppercase text-slate-500">Examinateur</p>
+                  <p class="font-semibold text-[#1E293B]">{{ historyDetail.data.examinerName }}</p>
+                </div>
+                <div class="col-span-2 pt-2 border-t border-slate-200">
+                  <p class="text-xs font-bold uppercase text-slate-500 mb-1">URL du Rapport</p>
+                  <a 
+                    v-if="historyDetail.data.reportUrl || historyDetail.data.ReportUrl" 
+                    :href="historyDetail.data.reportUrl || historyDetail.data.ReportUrl" 
+                    target="_blank" 
+                    class="text-[#0F52BA] hover:underline break-all"
+                  >
+                    {{ historyDetail.data.reportUrl || historyDetail.data.ReportUrl }}
+                  </a>
+                  <p v-else class="text-slate-400 italic">Aucun lien disponible</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="flex justify-end border-t border-slate-200 px-5 py-4 bg-slate-50 rounded-b-lg">
           <button
-            @click="historyAppointment = null"
-            class="rounded-lg bg-[#1E293B] px-4 py-2 text-sm font-semibold text-white"
+            @click="closeHistory"
+            class="rounded-lg bg-[#1E293B] px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 transition"
           >
             Fermer
           </button>
@@ -264,12 +381,14 @@
       </form>
     </div>
   </div>
+
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue';
 import axios from 'axios';
 import keycloak from '../services/keycloak';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 const API_BASE_URL = 'http://localhost:9090/api';
 
@@ -281,7 +400,24 @@ const loadingShifts = ref(false);
 const loadingAppointments = ref(false);
 const pageError = ref('');
 const actionError = ref('');
+const notifications = ref([]);
+
+// --- NOUVEAUX ETATS POUR L'HISTORIQUE ---
 const historyAppointment = ref(null);
+const patientHistory = reactive({
+  testResults: [],
+  consultations: [],
+  loading: false,
+  error: ''
+});
+const historyDetail = reactive({
+  data: null,
+  type: '',
+  loading: false,
+  error: ''
+});
+// -----------------------------------------
+
 const appointmentStatuses = reactive({});
 const reportUrl = ref('');
 const submittingReport = ref(false);
@@ -300,18 +436,12 @@ const examinerName = computed(() => {
 });
 
 const nextShiftLabel = computed(() => {
-  if (!nextShift.value) {
-    return 'Aucun';
-  }
-
+  if (!nextShift.value) return 'Aucun';
   return `${formatDate(nextShift.value.start)} · ${formatTime(nextShift.value.start)}`;
 });
 
 const selectedShiftTitle = computed(() => {
-  if (!selectedShift.value) {
-    return 'Aucun shift sélectionné';
-  }
-
+  if (!selectedShift.value) return 'Aucun shift sélectionné';
   const sectionName = selectedShift.value.sectionName || selectedShift.value.section?.name || 'Section';
   return `${sectionName} · ${formatDate(selectedShift.value.start)} · ${formatTime(selectedShift.value.start)}-${formatTime(selectedShift.value.end)}`;
 });
@@ -324,13 +454,82 @@ const reportModalTitle = computed(() => (
 
 onMounted(async () => {
   await loadShifts();
+  subscribeToNotifications();
 });
 
 const request = () => axios.create({
   baseURL: API_BASE_URL,
   headers: authHeaders.value
 });
+const subscribeToNotifications = async () => {
+  try {
+    await keycloak.updateToken(30);
 
+    await fetchEventSource(
+      'http://localhost:9090/api/notifications/subscribe',
+      {
+        method: 'GET',
+
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`
+        },
+
+        onopen(response) {
+          console.log('SSE connection opened');
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to connect: ${response.status}`
+            );
+          }
+        },
+
+        onmessage(event) {
+          try {
+            const notification = JSON.parse(event.data);
+
+            const id = Date.now();
+
+            notifications.value.unshift({
+              id,
+              message: notification.message,
+              timestamp: notification.timestamp
+            });
+
+            setTimeout(() => {
+              notifications.value =
+                notifications.value.filter(
+                  n => n.id !== id
+                );
+            }, 5000);
+
+          } catch (error) {
+            console.error(
+              'Failed to parse notification:',
+              error
+            );
+          }
+        },
+
+        onclose() {
+          console.log('SSE connection closed');
+        },
+
+        onerror(error) {
+          console.error('SSE error:', error);
+
+          throw error; // enables automatic reconnect behavior
+        }
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      'Notification subscription failed:',
+      error
+    );
+  }
+};
 const loadShifts = async () => {
   loadingShifts.value = true;
   pageError.value = '';
@@ -402,7 +601,6 @@ const markNonAttended = async (appointment) => {
 
 const runAppointmentAction = async (action, appointmentId, status) => {
   actionError.value = '';
-
   try {
     await action();
     appointmentStatuses[appointmentId] = status;
@@ -426,9 +624,7 @@ const closeReportModal = () => {
 };
 
 const submitReport = async () => {
-  if (!reportModal.appointment) {
-    return;
-  }
+  if (!reportModal.appointment) return;
 
   submittingReport.value = true;
   actionError.value = '';
@@ -448,9 +644,71 @@ const submitReport = async () => {
   }
 };
 
-const openHistory = (appointment) => {
+// ==============================================
+// GESTION DE L'HISTORIQUE PATIENT
+// ==============================================
+const openHistory = async (appointment) => {
   historyAppointment.value = appointment;
+  historyDetail.data = null; // Réinitialiser les détails
+  
+  // Chercher l'id patient depuis l'appointment
+  const patientId = appointment.patientId || appointment.patient?.id;
+  console.log("Patient ID trouvé:", patientId);
+  
+  if (!patientId) {
+    patientHistory.error = "L'identifiant du patient est introuvable.";
+    return;
+  }
+
+  await loadPatientHistory(patientId);
 };
+
+const loadPatientHistory = async (patientId) => {
+  patientHistory.loading = true;
+  patientHistory.error = '';
+  patientHistory.testResults = [];
+  patientHistory.consultations = [];
+
+  try {
+    const [testsRes, consRes] = await Promise.allSettled([
+      request().get(`/test-result/patient/${patientId}`),
+      request().get(`/consultation/patient/${patientId}`)
+    ]);
+
+    if (testsRes.status === 'fulfilled') patientHistory.testResults = testsRes.value.data || [];
+    if (consRes.status === 'fulfilled') patientHistory.consultations = consRes.value.data || [];
+  } catch (error) {
+    patientHistory.error = "Erreur lors du chargement de l'historique du patient.";
+  } finally {
+    patientHistory.loading = false;
+  }
+};
+
+const loadHistoryDetail = async (id, type) => {
+  historyDetail.loading = true;
+  historyDetail.error = '';
+  historyDetail.type = type;
+  historyDetail.data = null;
+
+  try {
+    const endpoint = type === 'consultation' 
+      ? `/consultation/${id}` 
+      : `/test-result/${id}`; // Modifié selon convention standard REST
+    
+    const res = await request().get(endpoint);
+    historyDetail.data = res.data;
+  } catch (error) {
+    historyDetail.error = "Impossible de charger les détails du document.";
+  } finally {
+    historyDetail.loading = false;
+  }
+};
+
+const closeHistory = () => {
+  historyAppointment.value = null;
+  historyDetail.data = null;
+};
+// ==============================================
 
 const localStatus = (appointmentId) => appointmentStatuses[appointmentId] || 'ACTIVE';
 
@@ -461,54 +719,42 @@ const statusClass = (status) => {
     NON_ATTENDED: 'bg-amber-50 text-amber-700',
     FINALIZED: 'bg-indigo-50 text-[#6366F1]'
   };
-
   return classes[status] || 'bg-slate-100 text-slate-600';
 };
 
-const patientLabel = (appointment) => appointment.patientName || appointment.patient?.name || 'Patient';
+const patientLabel = (appointment) => appointment?.patientName || appointment?.patient?.name || 'Patient';
 
 const shortId = (id) => (id ? `ID ${id.slice(0, 8)}` : 'ID non disponible');
 
 const formatDate = (value) => {
-  if (!value) {
-    return '--';
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short'
-  }).format(new Date(value));
+  if (!value) return '--';
+  return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }).format(new Date(value));
 };
 
 const formatTime = (value) => {
-  if (!value) {
-    return '--:--';
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(value));
+  if (!value) return '--:--';
+  return new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 };
 
 const formatDateTime = (value) => {
-  if (!value) {
-    return '--';
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value));
+  if (!value) return '--';
+  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 };
 
 const getErrorMessage = (error, fallback) => (
-  error?.response?.data?.message
-  || error?.response?.data?.error
-  || error?.message
-  || fallback
+  error?.response?.data?.message || error?.response?.data?.error || error?.message || fallback
 );
 
 const logout = () => keycloak.logout({ redirectUri: window.location.origin });
 </script>
+
+<style scoped>
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>

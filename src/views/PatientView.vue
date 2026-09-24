@@ -1,5 +1,43 @@
 <template>
   <div class="min-h-screen bg-[#F8FAFC]">
+    <div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3">
+  <transition-group
+    name="notification"
+    tag="div"
+  >
+    <div
+      v-for="notification in notifications"
+      :key="notification.id"
+      class="bg-white shadow-xl rounded-xl border border-slate-200 p-4 w-96"
+    >
+      <div class="flex items-start justify-between">
+        <div>
+          <h4 class="font-semibold text-[#0F52BA]">
+            Notification
+          </h4>
+
+          <p class="text-slate-700 mt-1">
+            {{ notification.message }}
+          </p>
+
+          <p
+            v-if="notification.timestamp"
+            class="text-xs text-slate-400 mt-2"
+          >
+            {{ formatDateTime(notification.timestamp) }}
+          </p>
+        </div>
+
+        <button
+          @click="removeNotification(notification.id)"
+          class="text-slate-400 hover:text-slate-600 ml-4"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </transition-group>
+</div>
     
     <nav class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -108,6 +146,76 @@ const userProfile = ref({
   fullName: '',
   email: ''
 });
+const notifications = ref([]);
+const subscribeToNotifications = async () => {
+  try {
+    await keycloak.updateToken(30);
+
+    await fetchEventSource(
+      'http://localhost:9090/api/notifications/subscribe',
+      {
+        method: 'GET',
+
+        headers: {
+          Authorization: `Bearer ${keycloak.token}`
+        },
+
+        onopen(response) {
+          console.log('SSE connection opened');
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to connect: ${response.status}`
+            );
+          }
+        },
+
+        onmessage(event) {
+          try {
+            const notification = JSON.parse(event.data);
+
+            const id = Date.now();
+
+            notifications.value.unshift({
+              id,
+              message: notification.message,
+              timestamp: notification.timestamp
+            });
+
+            setTimeout(() => {
+              notifications.value =
+                notifications.value.filter(
+                  n => n.id !== id
+                );
+            }, 5000);
+
+          } catch (error) {
+            console.error(
+              'Failed to parse notification:',
+              error
+            );
+          }
+        },
+
+        onclose() {
+          console.log('SSE connection closed');
+        },
+
+        onerror(error) {
+          console.error('SSE error:', error);
+
+          throw error; // enables automatic reconnect behavior
+        }
+      }
+    );
+
+  } catch (error) {
+    console.error(
+      'Notification subscription failed:',
+      error
+    );
+  }
+};
 
 // Capture sub-component payloads if you ever want to push new entries directly to UpcomingAppointments
 const handleModalSubmit = (formData) => {
@@ -130,7 +238,24 @@ onMounted(() => {
       email: keycloak.tokenParsed.email || ''
     };
   }
+  subscribeToNotifications();
 });
+const formatDateTime = (timestamp) => {
+  if (!timestamp) return '';
+
+  return new Date(timestamp).toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const removeNotification = (id) => {
+  notifications.value =
+    notifications.value.filter(n => n.id !== id);
+};
 
 const logout = () =>
   keycloak.logout({
@@ -153,3 +278,19 @@ const vClickOutside = {
   }
 };
 </script>
+<style scoped>
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s ease;
+}
+
+.notification-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+</style>
